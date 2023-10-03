@@ -5,7 +5,7 @@ from rich import print
 from copy import deepcopy
 
 
-main_board = [['X', '-', '-'],
+main_board = [['-', 'X', '-'],
               ['-', '-', '-'],
               ['-', '-', '-']]
 
@@ -120,68 +120,19 @@ def minmax(board, maximazing = True):
         return v
 
 
-#################
-
-def minimax2(board):
-    """
-    Returns the optimal action for the current player on the board.
-    """
-    if player(board) == 'X':
-        return __max_value(board)[1]
-    if player(board) == 'O':
-        return __min_value(board)[1]
-    raise NotImplementedError
-
-def __max_value(board):
-    if terminal(board):
-        return (utility(board), None)
-    v = float('-inf')
-    best_action: dict = {}
-    for action in actions(board):
-        v = max(v, __min_value(result(board, action))[0])
-        best_action[action] = v
-        # print("ACTION:", action, v)
-
-
-    return (v, max(best_action.items(), key=lambda x: x[1])[0])
-
-def __min_value(board):
-    if terminal(board):
-        return (utility(board), None)
-    v = float('inf')
-    best_action: dict = {}
+def best_move(board):
+    val_max = float('-inf')
+    best_action = None
 
     for action in actions(board):
-        v = min(v, __max_value(result(board, action))[0])
-        best_action[action] = v
-        #print("ACTION:", action, v)
+        copy_board = deepcopy(board)
+        copy_board[action[0]][action[1]] = player(board)
+        val = minmax(copy_board, maximazing=False)
+        if val_max < val:
+            val_max = val
+            best_action = action
 
-    return (v, min(best_action.items(), key=lambda x: x[1])[0])
-
-#################
-
-def mejor_movimiento(board, jugador):
-
-    mejor_valor = float('-inf')
-    mejor_mov = None
-    s = ' '
-    for fila in range(3):
-        s = ' '
-        for columna in range(3):
-            if board[fila][columna] == '-':
-                board[fila][columna] = jugador
-                valor = minmax(board)
-                s = s + str(valor) + ' ' 
-                board[fila][columna] = '-'  # Deshacer el movimiento
-
-                if valor > mejor_valor:
-                    mejor_valor = valor
-                    mejor_mov = (fila, columna)
-            else: 
-                s = s + '-' + ' '
-        # print(s)
-
-    return mejor_mov
+    return best_action
 
 def print_mat(board):
      s = ' '
@@ -203,17 +154,13 @@ def limpiar_terminal():
         # Si el sistema no es compatible, simplemente imprime caracteres de nueva línea para "limpiar" la pantalla
         print('\n' * 100)
 
-# Llamar a la función para limpiar la terminal
-limpiar_terminal()
-
 if __name__ == "__main__":
     print(main_board)
 
     while winner(main_board) == None:
         if player(main_board) == 'X':
-            # Revisar el funcionamiento del nuevo minmax y la siguiente function
-            t = mejor_movimiento(main_board, player(main_board))
-            best = minimax2(main_board)
+            best = best_move(main_board)
+            print("MINMAX NEW", best)
             main_board[best[0]][best[1]] = player(main_board)
         else:
             i = input('Mov: ').split(' ')
@@ -224,5 +171,3 @@ if __name__ == "__main__":
         print_mat(main_board)
     else:
         print("FINISH")
-    
-    
