@@ -10,6 +10,8 @@ class Nodo:
         self.nombre = nombre
         self.hijos = []
         self.padre = None
+        self.board = None
+        self.value = None
 
     def get_padre(self):
         return self.padre.nombre

@@ -63,12 +63,16 @@ class GameEngine:
                 make_move(self.m_board, self.m_best_move, Defines.WHITE)
                 self.m_chess_type = Defines.WHITE
             elif msg == "next":
+
+                ### OUR CODE START HERE ###
                 self.m_chess_type = self.m_chess_type ^ 3
                 if self.search_a_move(self.m_chess_type, self.m_best_move):
                     make_move(self.m_board, self.m_best_move, self.m_chess_type)
                     msg = f"move {move2msg(self.m_best_move)}"
                     print(msg)
                     flush_output()
+                ### OUR CODE END HERE ###
+                
             elif msg.startswith("new"):
                 self.init_game()
                 if msg[4:] == "black":
