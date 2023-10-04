@@ -9,13 +9,16 @@ main_board = [['-', 'X', '-'],
               ['-', '-', '-'],
               ['-', '-', '-']]
 
+main_board = [['-' for _ in range(19)] for _ in range(19)]
+main_board[0][0] = 'X'
 X_positions = set()
 X_positions.add((1,1))
 O_positions = set()
 
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
 turn = 0
-limit = 3
+limit = 19
+depth = 1
 
 def update_board(board, action):
     
@@ -70,20 +73,52 @@ def winner(board):
     Input board
     Output 'X' or 'O'
     '''
-    for i in range(len(board)):
-        if board[i][0] == board[i][1] == board[i][2] and board[i][0] is not '-':
-            return board[i][0]
+    # for i in range(len(board)):
+    #     if board[i][0] == board[i][1] == board[i][2] and board[i][0] is not '-':
+    #         return board[i][0]
         
-    for i in range(len(board)):
-        if board[0][i] == board[1][i] == board[2][i] and board[0][i] is not '-':
-            return board[0][i]
+    # for i in range(len(board)):
+    #     if board[0][i] == board[1][i] == board[2][i] and board[0][i] is not '-':
+    #         return board[0][i]
         
-    if board[0][0] == board[1][1] == board[2][2] and board[1][1] is not '-':
-        return board[1][1]
+    # if board[0][0] == board[1][1] == board[2][2] and board[1][1] is not '-':
+    #     return board[1][1]
     
-    if board[0][2] == board[1][1] == board[2][0] and board[1][1] is not '-':
-        return board[1][1]
-    
+    # if board[0][2] == board[1][1] == board[2][0] and board[1][1] is not '-':
+    #     return board[1][1]
+     # Verificar victoria horizontal
+    for row in board:
+        if ''.join(row).count('X' * 6) > 0:
+            return 'X'
+        if ''.join(row).count('O' * 6) > 0:
+            return 'O'
+
+    # Verificar victoria vertical
+    for col in range(len(board[0])):
+        column = ''.join([row[col] for row in board])
+        if column.count('X' * 6) > 0:
+            return 'X'
+        if column.count('O' * 6) > 0:
+            return 'O'
+
+    # Verificar victoria en diagonal (ascendente)
+    for i in range(len(board) - 5):
+        for j in range(len(board[0]) - 5):
+            diagonal = ''.join([board[i + k][j + k] for k in range(6)])
+            if diagonal.count('X' * 6) > 0:
+                return 'X'
+            if diagonal.count('O' * 6) > 0:
+                return 'O'
+
+    # Verificar victoria en diagonal (descendente)
+    for i in range(len(board) - 5):
+        for j in range(5, len(board[0])):
+            diagonal = ''.join([board[i + k][j - k] for k in range(6)])
+            if diagonal.count('X' * 6) > 0:
+                return 'X'
+            if diagonal.count('O' * 6) > 0:
+                return 'O'
+
     return None
 
 def terminal(board):
@@ -101,22 +136,22 @@ def utility(board):
     return 0
 
 
-def minmax(board, maximazing = True):
+def minmax(board, depth, maximazing = True):
     '''
     Input es el tablero del juego
     Devuelve la jugada optima por el jugador
     '''
-    if terminal(board):
+    if depth == 0 or terminal(board):
         return utility(board)
     if maximazing:
         v = float('-inf')
         for action in actions(board):
-            v = max(v, minmax(result(board, action), False))
+            v = max(v, minmax(result(board, action), depth-1, False))
         return v
     else:
         v = float('inf')
         for action in actions(board):
-            v = min(v, minmax(result(board, action), True))
+            v = min(v, minmax(result(board, action), depth-1, True))
         return v
 
 
@@ -127,7 +162,7 @@ def best_move(board):
     for action in actions(board):
         copy_board = deepcopy(board)
         copy_board[action[0]][action[1]] = player(board)
-        val = minmax(copy_board, maximazing=False)
+        val = minmax(copy_board,depth, maximazing=False)
         if val_max < val:
             val_max = val
             best_action = action
@@ -139,7 +174,7 @@ def print_mat(board):
      for row in board:
         s = ' '
         for col in row:
-            s += col 
+            s += ' ' + col 
         print(s)
 #################
 
