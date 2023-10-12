@@ -14,6 +14,7 @@ main_board = [['-', 'X', '-'],
 
 main_board = [['-' for _ in range(19)] for _ in range(19)]
 main_board[0][0] = 'X'
+
 last_X_positions = set()
 last_X_positions.add((0,0))
 last_O_positions = set()
@@ -24,10 +25,9 @@ O_positions = set()
 turn = 0
 limit = 19
 depth = 1
-RANGO = 1
+RANGO = 2
 
 def update_board(board, action):
-    
     if not (0 <= action[0] < limit and 0 <= action[1] < limit):
         board[action[0]][action[1]] = player(board)
     return board
@@ -60,8 +60,8 @@ def actions(board, array_tuplas, rango):
     recorrido = rango * 2 + 1
     if(array_tuplas):
         for tupla in array_tuplas:
-            print(type(tupla[0]))
-            print(tupla[1])
+            # print(type(tupla[0]))
+            # print(tupla[1])
             i_inicial = tupla[0] - rango
             j_inicial = tupla[1] - rango
             
@@ -99,20 +99,6 @@ def winner(board):
     Input board
     Output 'X' or 'O'
     '''
-    # for i in range(len(board)):
-    #     if board[i][0] == board[i][1] == board[i][2] and board[i][0] is not '-':
-    #         return board[i][0]
-        
-    # for i in range(len(board)):
-    #     if board[0][i] == board[1][i] == board[2][i] and board[0][i] is not '-':
-    #         return board[0][i]
-        
-    # if board[0][0] == board[1][1] == board[2][2] and board[1][1] is not '-':
-    #     return board[1][1]
-    
-    # if board[0][2] == board[1][1] == board[2][0] and board[1][1] is not '-':
-    #     return board[1][1]
-     # Verificar victoria horizontal
     for row in board:
         if ''.join(row).count('X' * 6) > 0:
             return 'X'
@@ -158,9 +144,8 @@ def utility(board, position):
         if winner(board) == 'X':
             return float("inf")
         elif winner(board) == 'O':
-            return float("-inf")
-        else:
-            return hmove_evaluation(board, position)
+            return float("-inf")    
+    return hmove_evaluation(board, position)
 
 def is_oponent_or_border(board, position: tuple):
     if player(board) == 'O':
@@ -175,7 +160,6 @@ def is_oponent_or_border(board, position: tuple):
         return True
     
     return False
-
 
 
 def has_win_or_threat(board,threat_size,player):
@@ -247,7 +231,7 @@ def hmove_evaluation(board, position: tuple):
 
     for dir in range(4):                    # Cuatro direcciones (0 = Horizontal, 1 = Diagonal Creciente, 2 = , 
         for l in range(2):                  # Dos lados, Ejemplo: (izquierdo, derecho) o (arriba, abajo)  
-            for next_pos in range(5):       # Por cada punto del lado
+            for next_pos in range(1,6):       # Por cada punto del lado
                 if l == 0:                  # a
                     
                     if dir == 0:            #  Horizontal
@@ -258,7 +242,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
                         #_calcule_e_dir(board, epsilon, e_dir, w, next_pos, i, j)
 
@@ -271,7 +255,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
                         
                     elif dir == 2:          # Vertical
@@ -282,7 +266,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
                         
                     elif dir == 3:          # Diagonal descendente
@@ -293,7 +277,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
                     
                 else:                       # b
                     
@@ -305,7 +289,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
 
                     elif dir == 1:          # Diagonal ascendente
@@ -316,7 +300,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
                         
                     elif dir == 2:          # Vertical
@@ -327,7 +311,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
 
                         
                     elif dir == 3:          # Diagonal descendente
@@ -338,9 +322,9 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == '-':
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
-                            e_dir *= w[next_pos]
+                            e_dir *= w[next_pos-1]
             e += e_dir
-    print(f"Evaluation {e} y position {position}")        
+    # print(f"Evaluation {e:.2f} y position {position}")        
     return e
 
 def minmax(board, depth, action_p, maximazing = True):
@@ -352,12 +336,16 @@ def minmax(board, depth, action_p, maximazing = True):
         return utility(board,action_p)
     if maximazing:
         v = float('-inf')
-        for action in actions(board, set().add(action_p), RANGO):   
+        actions_set = set()
+        actions_set.add(action_p)
+        for action in actions(board, actions_set, RANGO):   
             v = max(v, minmax(result(board, action), depth-1, action, False))
         return v
     else:
         v = float('inf')
-        for action in actions(board, set().add(action_p), RANGO):
+        actions_set = set()
+        actions_set.add(action_p)
+        for action in actions(board, actions_set, RANGO):
             v = min(v, minmax(result(board, action), depth-1, action, True))
         return v
     
