@@ -87,8 +87,8 @@ def result(board: list[list[str]], action: tuple):
     if not (0 <= action[0] < limit and 0 <= action[1] < limit):
         raise Exception("Index out of bounds")
     # Comprueba si la posición está ocupada
-    if board[action[0]][action[1]] != '-':
-        raise Exception("Position is already occupied")
+    # if board[action[0]][action[1]] != '-':
+    #     raise Exception("Position is already occupied")
     copy_board = deepcopy(board)
     copy_board[action[0]][action[1]] = player(board)
     return copy_board
@@ -150,7 +150,7 @@ def winner(board):
 def terminal(board):
     return (winner(board) is not None or not any('-' in i for i in board))
 
-def utility(board):
+def utility(board, position):
     '''
     Esta es la función heurística
     '''
@@ -160,7 +160,7 @@ def utility(board):
         elif winner(board) == 'O':
             return float("-inf")
         else:
-            return hmove_evaluation(board)
+            return hmove_evaluation(board, position)
 
 def is_oponent_or_border(board, position: tuple):
     if player(board) == 'O':
@@ -241,7 +241,7 @@ def hmove_evaluation(board, position: tuple):
     Return el score
     '''
     epsilon = 2
-    w = [5,4,3,2,1]
+    w = [2.30, 2.143, 2, 1.866, 1.741]
     e = 0
     e_dir = 1
 
@@ -286,7 +286,7 @@ def hmove_evaluation(board, position: tuple):
 
                         
                     elif dir == 3:          # Diagonal descendente
-                        i = position[0] + next_pos
+                        i = position[0] - next_pos
                         j = position[1] - next_pos
                         if is_oponent_or_border(board, (i,j)):
                             break
@@ -339,7 +339,8 @@ def hmove_evaluation(board, position: tuple):
                             e_dir *= epsilon
                         elif board[i][j] == player(board):
                             e_dir *= w[next_pos]
-            e = e + e_dir
+            e += e_dir
+    print(f"Evaluation {e} y position {position}")        
     return e
 
 def minmax(board, depth, action_p, maximazing = True):
@@ -352,12 +353,12 @@ def minmax(board, depth, action_p, maximazing = True):
     if maximazing:
         v = float('-inf')
         for action in actions(board, set().add(action_p), RANGO):   
-            v = max(v, minmax(result(board, action), depth-1, False))
+            v = max(v, minmax(result(board, action), depth-1, action, False))
         return v
     else:
         v = float('inf')
         for action in actions(board, set().add(action_p), RANGO):
-            v = min(v, minmax(result(board, action), depth-1, True))
+            v = min(v, minmax(result(board, action), depth-1, action, True))
         return v
     
 
@@ -415,7 +416,7 @@ def main():
             if i[0] == 'e':
                 exit(0)
             main_board = result(main_board, action)
-        limpiar_terminal()
+        # limpiar_terminal()
         print_mat(main_board)
     else:
         print("FINISH")
