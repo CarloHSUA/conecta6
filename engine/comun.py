@@ -17,7 +17,7 @@ main_board[0][0] = 'X'
 last_X_positions = set()
 last_X_positions.add((0,0))
 last_O_positions = set()
-last_O_positions.add((5,5))
+# last_O_positions.add((5,5))
 O_positions = set()
 
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
@@ -83,8 +83,12 @@ def result(board: list[list[str]], action: tuple):
     Input board and action (i, j)
     Return deep copy board
     '''
+    # Comprueba si la posición está fuera del tablero
     if not (0 <= action[0] < limit and 0 <= action[1] < limit):
         raise Exception("Index out of bounds")
+    # Comprueba si la posición está ocupada
+    if board[action[0]][action[1]] != '-':
+        raise Exception("Position is already occupied")
     copy_board = deepcopy(board)
     copy_board[action[0]][action[1]] = player(board)
     return copy_board
