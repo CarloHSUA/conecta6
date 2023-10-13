@@ -24,7 +24,7 @@ O_positions = set()
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
 turn = 0
 limit = 19
-depth = 4
+depth = 2
 RANGO = 1
 
 def update_board(board, action):
@@ -68,7 +68,7 @@ def actions(board, array_tuplas, rango):
             
             for i in range(recorrido):
                 for j in range(recorrido):
-                    if(not is_oponent_or_border(board,(i + i_inicial, j + j_inicial)) and board[i + i_inicial][j + j_inicial] != player(board)):
+                    if(not is_oponent_or_border(board, (i + i_inicial, j + j_inicial), player(board)) and board[i + i_inicial][j + j_inicial] != player(board)):
                         out_set.add((i + i_inicial, j + j_inicial))
 
                     
@@ -137,7 +137,7 @@ def winner(board):
 def terminal(board):
     return (winner(board) is not None or not any('-' in i for i in board))
 
-def utility(board, position):
+def utility(board, position, player):
     '''
     Esta es la función heurística
     '''
@@ -146,10 +146,10 @@ def utility(board, position):
             return float("inf")
         elif winner(board) == 'O':
             return float("-inf")    
-    return hmove_evaluation(board, position)
+    return hmove_evaluation(board, position, player)
 
-def is_oponent_or_border(board, position: tuple):
-    if player(board) == 'O':
+def is_oponent_or_border(board, position: tuple, player):
+    if player == 'O':
         opponnent = 'X'
     else: 
         opponnent = 'O'
@@ -220,7 +220,7 @@ def defensive_slide_window():
 #         e_dir *= w[next_pos]
 #     return e_dir
 
-def hmove_evaluation(board, position: tuple):
+def hmove_evaluation(board, position: tuple, player):
     '''
     Input position -> Evalua con un número como de buena es esa posición del tablero
     Return el score
@@ -239,11 +239,11 @@ def hmove_evaluation(board, position: tuple):
                     if dir == 0:            #  Horizontal
                         i = position[0]
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i, j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
                         #_calcule_e_dir(board, epsilon, e_dir, w, next_pos, i, j)
@@ -252,33 +252,33 @@ def hmove_evaluation(board, position: tuple):
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] - next_pos
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i, j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
                         
                     elif dir == 2:          # Vertical
                         i = position[0] - next_pos
                         j = position[1]
-                        if is_oponent_or_border(board, (i,j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
                         
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] - next_pos
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i,j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
                     
                 else:                       # b
@@ -286,69 +286,69 @@ def hmove_evaluation(board, position: tuple):
                     if dir == 0:            #  Horizontal
                         i = position[0]
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i, j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
 
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] + next_pos
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i, j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
 
                     elif dir == 2:          # Vertical
                         i = position[0] + next_pos
                         j = position[1]
-                        if is_oponent_or_border(board, (i,j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
 
                         
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] + next_pos
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i,j)):
+                        if is_oponent_or_border(board, (i, j), player):
                             break
                         elif board[i][j] == '-':
                             e_dir *= epsilon
-                        elif board[i][j] == player(board):
+                        elif board[i][j] == player:
                             e_dir *= w[next_pos-1]
             e += e_dir
     # print(f"Evaluation {e:.2f} y position {position}")        
     return e
 
-def minmax(board, depth, action_p, maximazing = True):
+def minmax(board, depth, action_p, player_p, maximazing = True):
     '''
     Input es el tablero del juego
     Devuelve la jugada optima por el jugador
     '''
     if depth == 0 or terminal(board):
-        return utility(board,action_p)
+        return utility(board, action_p, player_p)
     if maximazing:
         v = float('-inf')
         actions_set = set()
         actions_set.add(action_p)
         for action in actions(board, actions_set, RANGO):   
-            v = max(v, minmax(result(board, action), depth-1, action, False))
+            v = max(v, minmax(result(board, action), depth-1, action, player(board), False))
         return v
     else:
         v = float('inf')
         actions_set = set()
         actions_set.add(action_p)
         for action in actions(board, actions_set, RANGO):
-            v = min(v, minmax(result(board, action), depth-1, action, True))
+            v = min(v, minmax(result(board, action), depth-1, action, player(board), True))
         return v
     
 
@@ -360,7 +360,7 @@ def best_move(board):
         copy_board = deepcopy(board)
         # Player simepre es X que es la IA
         copy_board[action[0]][action[1]] = player(board)
-        val = minmax(copy_board, depth - 1, action, maximazing=False)
+        val = minmax(copy_board, depth - 1, action, player(board), maximazing=False)
         if val_max < val:
             val_max = val
             best_action = action
