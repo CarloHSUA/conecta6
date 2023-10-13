@@ -24,8 +24,8 @@ O_positions = set()
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
 turn = 0
 limit = 19
-depth = 1
-RANGO = 2
+depth = 4
+RANGO = 1
 
 def update_board(board, action):
     if not (0 <= action[0] < limit and 0 <= action[1] < limit):
@@ -57,6 +57,7 @@ def actions(board, array_tuplas, rango):
     '''
     out_set = set()
     # rango * 2 + 1
+
     recorrido = rango * 2 + 1
     if(array_tuplas):
         for tupla in array_tuplas:
@@ -71,10 +72,10 @@ def actions(board, array_tuplas, rango):
                         out_set.add((i + i_inicial, j + j_inicial))
 
                     
-        # for i, row in enumerate(board):
-        #     for j, col in enumerate(row):
-        #         if col == '-':
-        #             out_set.add((i, j))
+    # for i, row in enumerate(board):
+    #     for j, col in enumerate(row):
+    #         if col == '-':
+    #             out_set.add((i, j))
     return out_set
 
 
@@ -225,7 +226,8 @@ def hmove_evaluation(board, position: tuple):
     Return el score
     '''
     epsilon = 2
-    w = [2.30, 2.143, 2, 1.866, 1.741]
+    # w = [2.30, 2.143, 2, 1.866, 1.741]
+    w = [5, 4, 3, 2, 1]
     e = 0
     e_dir = 1
 
@@ -302,7 +304,7 @@ def hmove_evaluation(board, position: tuple):
                         elif board[i][j] == player(board):
                             e_dir *= w[next_pos-1]
 
-                        
+
                     elif dir == 2:          # Vertical
                         i = position[0] + next_pos
                         j = position[1]
@@ -358,7 +360,7 @@ def best_move(board):
         copy_board = deepcopy(board)
         # Player simepre es X que es la IA
         copy_board[action[0]][action[1]] = player(board)
-        val = minmax(copy_board, depth, action, maximazing=False)
+        val = minmax(copy_board, depth - 1, action, maximazing=False)
         if val_max < val:
             val_max = val
             best_action = action
@@ -404,7 +406,7 @@ def main():
             if i[0] == 'e':
                 exit(0)
             main_board = result(main_board, action)
-        # limpiar_terminal()
+        limpiar_terminal()
         print_mat(main_board)
     else:
         print("FINISH")
