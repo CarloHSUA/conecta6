@@ -205,11 +205,43 @@ def threat_space_search(board, atacante):
         return False 
     pass
 
-def sliding_window():
-    pass
+def evaluate_sliding_window(board, player):
+    player_score = 0
+    window_size = 4  # Tamaño de la ventana
 
-def defensive_slide_window():
-    pass
+    for row in range(limit):
+        for col in range(limit - window_size + 1):
+            window = [board[row][col + i] for i in range(window_size)]
+            if window.count(player) == window_size - 1 and window.count(player) == 1:
+                player_score += 1
+
+    for col in range(limit):
+        for row in range(limit - window_size + 1):
+            window = [board[row + i][col] for i in range(window_size)]
+            if window.count(player) == window_size - 1 and window.count(player) == 1:
+                player_score += 1
+
+    return player_score
+
+# Función para evaluar la defensa utilizando defensive sliding window
+def evaluate_defensive_sliding_window(board, player):
+    opponent = "X" if player == "O" else "X"
+    opponent_score = 0
+    window_size = 4  # Tamaño de la ventana
+
+    for row in range(limit):
+        for col in range(limit - window_size + 1):
+            window = [board[row][col + i] for i in range(window_size)]
+            if window.count(opponent) == window_size - 1 and window.count(player) == 1:
+                opponent_score += 1
+
+    for col in range(limit):
+        for row in range(limit - window_size + 1):
+            window = [board[row + i][col] for i in range(window_size)]
+            if window.count(opponent) == window_size - 1 and window.count(player) == 1:
+                opponent_score += 1
+
+    return opponent_score
 
 # def _calcule_e_dir(board, epsilon, e_dir, w, next_pos, i, j):
 #     if is_oponent_or_border(board, (i, j)):
