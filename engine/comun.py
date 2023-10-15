@@ -13,12 +13,12 @@ main_board = [['-', 'X', '-'],
               ['-', '-', '-']]
 
 main_board = [['-' for _ in range(19)] for _ in range(19)]
-main_board[0][0] = 'X'
+main_board[10][10] = 'X'
 
 last_X_positions = set()
-last_X_positions.add((0,0))
+last_X_positions.add((10,10))
 last_O_positions = set()
-# last_O_positions.add((5,5))
+last_O_positions.add((10,10))
 O_positions = set()
 
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
@@ -31,7 +31,6 @@ def update_board(board, action):
     if not (0 <= action[0] < limit and 0 <= action[1] < limit):
         board[action[0]][action[1]] = player(board)
     return board
-
 
 def player(board):
     X = 0
@@ -48,9 +47,7 @@ def player(board):
     else:
         return 'O'
     
-
-
-def actions(board, array_tuplas, rango):
+def actions(board, array_tuplas, rango, player_p):
     '''
     Input -> board, array_tuplas, rango
     Return -> set de movimientos posibles {(i,j), (i,j), (i,j)}
@@ -68,7 +65,7 @@ def actions(board, array_tuplas, rango):
             
             for i in range(recorrido):
                 for j in range(recorrido):
-                    if(not is_oponent_or_border(board, (i + i_inicial, j + j_inicial), player(board)) and board[i + i_inicial][j + j_inicial] != player(board)):
+                    if(not is_oponent_or_border(board, (i + i_inicial, j + j_inicial), player_p) and board[i + i_inicial][j + j_inicial] != player_p):
                         out_set.add((i + i_inicial, j + j_inicial))
 
                     
@@ -78,8 +75,7 @@ def actions(board, array_tuplas, rango):
     #             out_set.add((i, j))
     return out_set
 
-
-def result(board: list[list[str]], action: tuple):
+def result(board: list[list[str]], action: tuple, player_p):
     '''
     Input board and action (i, j)
     Return deep copy board
@@ -91,9 +87,8 @@ def result(board: list[list[str]], action: tuple):
     # if board[action[0]][action[1]] != '-':
     #     raise Exception("Position is already occupied")
     copy_board = deepcopy(board)
-    copy_board[action[0]][action[1]] = player(board)
+    copy_board[action[0]][action[1]] = player_p
     return copy_board
-
 
 def winner(board):
     '''
@@ -147,21 +142,6 @@ def utility(board, position, player):
         elif winner(board) == 'O':
             return float("-inf")    
     return hmove_evaluation(board, position, player)
-
-def is_oponent_or_border(board, position: tuple, player):
-    if player == 'O':
-        opponnent = 'X'
-    else: 
-        opponnent = 'O'
-    
-    try:
-        if board[position[0]][position[1]] == opponnent or position[0] < 0 or position[1] < 0:
-            return True
-    except:
-        return True
-    
-    return False
-
 
 def has_win_or_threat(board,threat_size,player):
     for row in board:
@@ -243,14 +223,35 @@ def evaluate_defensive_sliding_window(board, player):
 
     return opponent_score
 
-# def _calcule_e_dir(board, epsilon, e_dir, w, next_pos, i, j):
-#     if is_oponent_or_border(board, (i, j)):
-#         break
-#     elif board[i][j] == '-':
-#         e_dir *= epsilon
-#     elif board[i][j] == player(board):
-#         e_dir *= w[next_pos]
-#     return e_dir
+def is_oponent_or_border(board, position: tuple, player):
+    # if player == 'O':
+    #     opponnent = 'X'
+    # else: 
+    #     opponnent = 'O'
+    opponnent = 'X' if player == 'O' else 'O'
+    try:
+        if board[position[0]][position[1]] == opponnent or position[0] < 0 or position[1] < 0:
+            return True
+    except:
+        return True
+    
+    return False
+
+def is_oponent(board, position, player):
+    oponent = 'X' if player == 'O' else 'O'
+    return True if board[position[0]][position[1]] == oponent else False
+
+def is_border(position):
+    return False if 0 <= position[0] < limit and 0 <= position[1] < limit else True
+
+def calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w):
+    if is_oponent(board, (i, j), player):
+        e_dir += 0 # oponent * w[next_pos - 1]
+    elif board[i][j] == '-':
+        e_dir *= 2 # empty
+    elif board[i][j] == player:
+        e_dir *= w[next_pos - 1] # same_player * w[next_pos - 1]
+    return e_dir
 
 def hmove_evaluation(board, position: tuple, player):
     '''
@@ -260,103 +261,75 @@ def hmove_evaluation(board, position: tuple, player):
     epsilon = 2
     # w = [2.30, 2.143, 2, 1.866, 1.741]
     w = [5, 4, 3, 2, 1]
+    w.reverse()
     e = 0
     e_dir = 1
 
+    oponent = 3
+    same_player = 2
+    empty = 1
+
     for dir in range(4):                    # Cuatro direcciones (0 = Horizontal, 1 = Diagonal Creciente, 2 = , 
         for l in range(2):                  # Dos lados, Ejemplo: (izquierdo, derecho) o (arriba, abajo)  
-            for next_pos in range(1,6):       # Por cada punto del lado
+            for next_pos in range(1,6):     # Por cada punto del lado
                 if l == 0:                  # a
                     
                     if dir == 0:            #  Horizontal
                         i = position[0]
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
-
-                        #_calcule_e_dir(board, epsilon, e_dir, w, next_pos, i, j)
-
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] - next_pos
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
-                        
                     elif dir == 2:          # Vertical
                         i = position[0] - next_pos
                         j = position[1]
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
-                        
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] - next_pos
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
                     
                 else:                       # b
-                    
                     if dir == 0:            #  Horizontal
                         i = position[0]
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
-
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] + next_pos
                         j = position[1] - next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
-
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
                     elif dir == 2:          # Vertical
                         i = position[0] + next_pos
                         j = position[1]
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
 
-                        
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] + next_pos
                         j = position[1] + next_pos
-                        if is_oponent_or_border(board, (i, j), player):
+                        if is_border((i, j)):
                             break
-                        elif board[i][j] == '-':
-                            e_dir *= epsilon
-                        elif board[i][j] == player:
-                            e_dir *= w[next_pos-1]
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
             e += e_dir
     # print(f"Evaluation {e:.2f} y position {position}")        
     return e
@@ -368,31 +341,36 @@ def minmax(board, depth, action_p, player_p, maximazing = True):
     '''
     if depth == 0 or terminal(board):
         return utility(board, action_p, player_p)
+    
+    if depth % 2 == 0:
+        player_p = 'X' if player_p == 'O' else 'O'
+        maximazing = False if maximazing == True else True
+
     if maximazing:
         v = float('-inf')
         actions_set = set()
         actions_set.add(action_p)
-        for action in actions(board, actions_set, RANGO):   
-            v = max(v, minmax(result(board, action), depth-1, action, player(board), False))
+        for action in actions(board, actions_set, RANGO, player_p):   
+            v = max(v, minmax(result(board, action, player_p), depth-1, action, player_p, True))
         return v
     else:
         v = float('inf')
         actions_set = set()
         actions_set.add(action_p)
-        for action in actions(board, actions_set, RANGO):
-            v = min(v, minmax(result(board, action), depth-1, action, player(board), True))
+        for action in actions(board, actions_set, RANGO, player_p):
+            v = min(v, minmax(result(board, action, player_p), depth-1, action, player_p, False))
         return v
     
 
-def best_move(board):
+def best_move(board, player_p):
     val_max = float('-inf')
     best_action = None
 
-    for action in actions(board, last_O_positions, RANGO):
+    for action in actions(board, last_O_positions, RANGO, player_p):
         copy_board = deepcopy(board)
         # Player simepre es X que es la IA
-        copy_board[action[0]][action[1]] = player(board)
-        val = minmax(copy_board, depth - 1, action, player(board), maximazing=False)
+        copy_board[action[0]][action[1]] = player_p
+        val = minmax(copy_board, depth - 1, action, player_p, maximazing = True)
         if val_max < val:
             val_max = val
             best_action = action
@@ -422,27 +400,56 @@ def limpiar_terminal():
 def main():
     global main_board
     print(main_board)
+    p = 'O'
 
+    # while winner(main_board) == None:
+    #     if player(main_board) == 'X':
+    #         best = best_move(main_board)
+    #         last_X_positions.clear()
+    #         last_X_positions.add(best)
+    #         print("MINMAX NEW", best)
+    #         main_board[best[0]][best[1]] = player(main_board)
+    #     else:
+    #         i = input('Mov: ').split(' ')
+    #         action = tuple([int(el) for el in i])
+    #         last_O_positions.clear()
+    #         last_O_positions.add(action)
+    #         if i[0] == 'e':
+    #             exit(0)
+    #         main_board = result(main_board, action)
+    #     limpiar_terminal()
+    #     print_mat(main_board)
+    # else:
+    #     print("FINISH")
     while winner(main_board) == None:
-        if player(main_board) == 'X':
-            best = best_move(main_board)
-            last_X_positions.clear()
-            last_X_positions.add(best)
-            print("MINMAX NEW", best)
-            main_board[best[0]][best[1]] = player(main_board)
+
+        for _ in range(2):
+            if p == 'O':
+                i = input('Mov: ').split(' ')
+                action = tuple([int(el) for el in i])
+                last_O_positions.add(action)
+                if i[0] == 'e':
+                    exit(0)
+                main_board = result(main_board, action, player_p = p)
+            else:
+                best = best_move(main_board, player_p = p)
+                # last_X_positions.add(best)
+                last_O_positions.add(best)
+                print("MINMAX NEW", best)
+                main_board[best[0]][best[1]] = p
+
+        if p == 'X':
+            p = 'O'
+            # last_O_positions.clear()
         else:
-            i = input('Mov: ').split(' ')
-            action = tuple([int(el) for el in i])
-            last_O_positions.clear()
-            last_O_positions.add(action)
-            if i[0] == 'e':
-                exit(0)
-            main_board = result(main_board, action)
+            p = 'X'
+            last_X_positions.clear()
+
         limpiar_terminal()
         print_mat(main_board)
-    else:
+    else: 
         print("FINISH")
-
+            
 if __name__ == "__main__":
     main()
     # array_tuplas = [(0,0), (10,10)]
