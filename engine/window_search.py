@@ -69,6 +69,8 @@ def evaluate_advanced(board, player):
     player_score += evaluate_sliding_window(board, player)
     opponent_score += evaluate_defensive_sliding_window(board, player)
     
+    # print("Player score: ", player_score)
+    # print("Opponent score: ", opponent_score)
     # Implementa la búsqueda de patrones
     
     # Implementa la puntuación de posiciones
@@ -220,21 +222,29 @@ def threat_space_search(board, player):
                     if board[row][col + 1:col + 4] == [player, player, player]:
                         if col + 4 < COLUMNS and board[row][col + 4] == EMPTY:
                             threats.append((row, col + 4))
+                        if col - 1 >= 0 and board[row][col - 1] == EMPTY:
+                            threats.append((row, col - 1))
                 # Verificar amenazas verticales
                 if row <= ROWS - 4:
                     if [board[row + i][col] for i in range(1, 4)] == [player, player, player]:
                         if row + 4 < ROWS and board[row + 4][col] == EMPTY:
                             threats.append((row + 4, col))
+                        if row - 1 >= 0 and board[row - 1][col] == EMPTY:
+                            threats.append((row - 1, col))
                 # Verificar amenazas diagonales (izquierda a derecha)
                 if col <= COLUMNS - 4 and row <= ROWS - 4:
                     if [board[row + i][col + i] for i in range(1, 4)] == [player, player, player]:
                         if row + 4 < ROWS and col + 4 < COLUMNS and board[row + 4][col + 4] == EMPTY:
                             threats.append((row + 4, col + 4))
+                        if row - 1 >= 0 and col - 1 >= 0 and board[row - 1][col - 1] == EMPTY:
+                            threats.append((row - 1, col - 1))
                 # Verificar amenazas diagonales (derecha a izquierda)
                 if col >= 3 and row <= ROWS - 4:
                     if [board[row + i][col - i] for i in range(1, 4)] == [player, player, player]:
                         if row + 4 < ROWS and col - 4 >= 0 and board[row + 4][col - 4] == EMPTY:
                             threats.append((row + 4, col - 4))
+                        if row - 1 >= 0 and col + 1 < COLUMNS and board[row - 1][col + 1] == EMPTY:
+                            threats.append((row - 1, col + 1))
 
     return threats
 
@@ -278,7 +288,7 @@ def window_search(board, player, depth, alpha, beta, maximizing_player):
 def choose_best_move(board, player, depth):
     best_move = None
     best_value = -math.inf
-    print(threat_space_search(board, "X"))
+    # print(threat_space_search(board, "X"))
     print(threat_space_search(board, "O"))
     if len(threat_space_search(board, "O")) > 0:
         return threat_space_search(board, "O")[0]
@@ -312,7 +322,7 @@ def play_connect6():
     while True:
         print_board(board)
 
-        for _ in range(1):  # Realiza dos movimientos en cada turno
+        for _ in range(2):  # Realiza dos movimientos en cada turno
             if player == PLAYER_O:
                 while True:
                     try:
