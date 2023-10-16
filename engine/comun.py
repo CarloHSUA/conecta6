@@ -24,7 +24,7 @@ O_positions = set()
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
 turn = 0
 limit = 19
-depth = 2
+depth = 1
 RANGO = 1
 
 def update_board(board, action):
@@ -244,13 +244,13 @@ def is_oponent(board, position, player):
 def is_border(position):
     return False if 0 <= position[0] < limit and 0 <= position[1] < limit else True
 
-def calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w):
+def calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w):
     if is_oponent(board, (i, j), player):
-        e_dir += 0 # oponent * w[next_pos - 1]
+        e_dir += w2[0] * w[next_pos - 1]
     elif board[i][j] == '-':
-        e_dir *= 2 # empty
+        e_dir += w2[2]
     elif board[i][j] == player:
-        e_dir *= w[next_pos - 1] # same_player * w[next_pos - 1]
+        e_dir += w2[1] * w[next_pos - 1]
     return e_dir
 
 def hmove_evaluation(board, position: tuple, player):
@@ -261,7 +261,8 @@ def hmove_evaluation(board, position: tuple, player):
     epsilon = 2
     # w = [2.30, 2.143, 2, 1.866, 1.741]
     w = [5, 4, 3, 2, 1]
-    w.reverse()
+    w2 = [3, 2, 1]
+    # w.reverse()
     e = 0
     e_dir = 1
 
@@ -279,28 +280,28 @@ def hmove_evaluation(board, position: tuple, player):
                         j = position[1] + next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] - next_pos
                         j = position[1] + next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 2:          # Vertical
                         i = position[0] - next_pos
                         j = position[1]
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] - next_pos
                         j = position[1] - next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
                     
                 else:                       # b
                     if dir == 0:            #  Horizontal
@@ -308,28 +309,28 @@ def hmove_evaluation(board, position: tuple, player):
                         j = position[1] - next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 1:          # Diagonal ascendente
                         i = position[0] + next_pos
                         j = position[1] - next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 2:          # Vertical
                         i = position[0] + next_pos
                         j = position[1]
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
 
                     elif dir == 3:          # Diagonal descendente
                         i = position[0] + next_pos
                         j = position[1] + next_pos
                         if is_border((i, j)):
                             break
-                        e_dir = calc_e_dir(e_dir, board, i, j, player, oponent, empty, same_player, next_pos, w)
+                        e_dir = calc_e_dir(e_dir, board, i, j, player, w2, next_pos, w)
             e += e_dir
     # print(f"Evaluation {e:.2f} y position {position}")        
     return e
