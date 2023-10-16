@@ -66,13 +66,13 @@ def evaluate_advanced(board, player):
     opponent_score = 0
 
     # Implementa sliding window y defensive sliding window aquí
-    player_score += evaluate_sliding_window(board, player)
-    opponent_score += evaluate_defensive_sliding_window(board, player)
+    # player_score += evaluate_sliding_window(board, player)
+    # opponent_score += evaluate_defensive_sliding_window(board, player)
     
     # print("Player score: ", player_score)
     # print("Opponent score: ", opponent_score)
     # Implementa la búsqueda de patrones
-    
+    player_score += evaluate_patterns(board,player)
     # Implementa la puntuación de posiciones
     player_score += evaluate_positions(board, player)
     opponent_score += evaluate_positions(board, opponent)
@@ -101,7 +101,7 @@ def evaluate_advanced(board, player):
             board[row][col] = EMPTY
 
     return player_score - opponent_score
-    
+
 def evaluate_positions(board,player):
     position_values = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -133,15 +133,33 @@ def evaluate_positions(board,player):
 
     return player_total_score
 
-def evaluate_patterns(board, player):
-    player_patterns = {
-        "-XXXX-": 100,
-        "-XXX-": 50,
-        "-XX-": 20,
-        "-OOOO-": -100,
-        "-OOO-": -50,
-        "-OO-": -20
-    }
+def evaluate_patterns(board,player):
+    if player == PLAYER_X:
+        player_patterns = {
+            "XXXXXX": 500,
+            "-XXXX-": 100,
+            "-XXX-": 50,
+            "-XX-": 20,
+            "-X-": 10,
+            "OOOOOO": -500,
+            "-OOOO-": -100,
+            "-OOO-": -50,
+            "-OO-": -20,
+            "-O-": -10
+        }
+    else:
+        player_patterns = {
+            "XXXXXX": -500,
+            "-XXXX-": -100,
+            "-XXX-": -50,
+            "-XX-": -20,
+            "-X-": -10,
+            "OOOOOO": 500,
+            "-OOOO-": 100,
+            "-OOO-": 50,
+            "-OO-": 20,
+            "-O-": 10
+        }
 
     total_score = 0
 
@@ -260,6 +278,7 @@ def window_search(board, player, depth, alpha, beta, maximizing_player):
         return evaluate_advanced(board, player)
 
     valid_moves = [(row, col) for row in range(ROWS) for col in range(COLUMNS) if is_valid_move(board, row, col)]
+    
 
     if maximizing_player:
         value = -math.inf
@@ -284,14 +303,22 @@ def window_search(board, player, depth, alpha, beta, maximizing_player):
                 break
         return value
 
+# Reducción del tablero original
+def reduce_board(board, row, col, reduced_size, player, last_position:tuple):
+    min_row = max(0, row - reduced_size // 2)
+    max_row = min(len(board), row + reduced_size // 2 + 1)
+    min_col = max(0, col - reduced_size // 2)
+    max_col = min(len(board[0]), col + reduced_size // 2 + 1)
+
+    reduced_board = [[board[r][c] for c in range(min_col, max_col)] for r in range(min_row, max_row)]
+
+    return reduced_board, (row - min_row, col - min_col)
+
 # Función para elegir el mejor movimiento con búsqueda de ventana
 def choose_best_move(board, player, depth):
     best_move = None
     best_value = -math.inf
     # print(threat_space_search(board, "X"))
-    print(threat_space_search(board, "O"))
-    if len(threat_space_search(board, "O")) > 0:
-        return threat_space_search(board, "O")[0]
         
     valid_moves = [(row, col) for row in range(ROWS) for col in range(COLUMNS) if is_valid_move(board, row, col)]
 
@@ -300,7 +327,11 @@ def choose_best_move(board, player, depth):
         board[row][col] = player
 
         # Implementa la búsqueda en ventanas
-        value = window_search(board, PLAYER_X if player == PLAYER_O else PLAYER_X, depth - 1, -math.inf, math.inf, False)
+        if player == PLAYER_X:
+            value = window_search(board, PLAYER_X if player == PLAYER_O else PLAYER_X, depth - 1, -math.inf, math.inf, False)
+        else:
+            value = window_search(board, PLAYER_O if player == PLAYER_X else PLAYER_O, depth - 1, -math.inf, math.inf, True)
+       
 
         board[row][col] = EMPTY
 
@@ -313,7 +344,7 @@ def choose_best_move(board, player, depth):
 # Función principal del juego
 def play_connect6():
     board = create_board()
-    player = PLAYER_O  # El jugador humano (O) comienza los movimientos
+    player = PLAYER_O  # El jugador (O) comienza los movimientos
     depth = 1  # Profundidad máxima de búsqueda
     time_limit_per_move = float('inf')  # No hay límite de tiempo
 
@@ -324,18 +355,20 @@ def play_connect6():
 
         for _ in range(2):  # Realiza dos movimientos en cada turno
             if player == PLAYER_O:
-                while True:
-                    try:
-                        row = int(input("Ingresa la fila: "))
-                        col = int(input("Ingresa la columna: "))
-                    except ValueError:
-                        print("Entrada no válida. Ingresa números enteros.")
-                        continue
-                    if not is_valid_move(board, row, col):
-                        print("Movimiento no válido. La casilla ya está ocupada.")
-                        continue
-                    make_move(board, player, row, col)
-                    break
+                # while True:
+                #     try:
+                #         row = int(input("Ingresa la fila: "))
+                #         col = int(input("Ingresa la columna: "))
+                #     except ValueError:
+                #         print("Entrada no válida. Ingresa números enteros.")
+                #         continue
+                #     if not is_valid_move(board, row, col):
+                #         print("Movimiento no válido. La casilla ya está ocupada.")
+                #         continue
+                #     make_move(board, player, row, col)
+                #     break
+                row, col = choose_best_move(board, PLAYER_O, depth)
+                make_move(board, PLAYER_O, row, col)
             else:
                 row, col = choose_best_move(board, PLAYER_X, depth)
                 make_move(board, PLAYER_X, row, col)
@@ -352,4 +385,6 @@ def play_connect6():
         player = PLAYER_X if player == PLAYER_O else PLAYER_O
 
 if __name__ == "__main__":
-    play_connect6()
+    # play_connect6()
+    board = create_board()
+    print(reduce_board(board,19,19,13))
