@@ -74,7 +74,7 @@ def evaluate_advanced(board, player):
     # Implementa la búsqueda de patrones
     player_score += evaluate_patterns(board, player)
     # Implementa la puntuación de posiciones
-    player_score += evaluate_positions(board, player) # -396
+    player_score += evaluate_positions(board, player)
     opponent_score += evaluate_positions(board, opponent) 
     
     # Implementa threat space search aquí
