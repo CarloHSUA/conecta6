@@ -149,17 +149,9 @@ def utility(board, position, player):
     return hmove_evaluation(board, position, player)
 
 def is_oponent_or_border(board, position: tuple, player):
-    if player == 'O':
-        opponnent = 'X'
-    else: 
-        opponnent = 'O'
-    
-    try:
-        if board[position[0]][position[1]] == opponnent or position[0] < 0 or position[1] < 0:
-            return True
-    except:
+    oponent = 'X' if player == 'O' else 'O'
+    if board[position[0]][position[1]] == oponent or position[0] < 0 or position[1] < 0:
         return True
-    
     return False
 
 
