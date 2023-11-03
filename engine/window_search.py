@@ -116,29 +116,29 @@ def evaluate_advanced(board, position, player):
     # player_score += evaluate_patterns(board, player)
     player_score += evaluate_star(board, position, player)
     # Implementa la puntuación de posiciones
-    player_score += evaluate_positions(board, player)
-    opponent_score += evaluate_positions(board, opponent) 
+    # player_score += evaluate_positions(board, player)
+    # opponent_score += evaluate_positions(board, opponent) 
     
     # Implementa threat space search aquí
-    player_score += evaluate_threat_space(board, player)
+    # player_score += evaluate_threat_space(board, player)
 
-    # Evalúa la presencia de amenazas que podrían convertirse en victorias en el próximo turno
-    threats = threat_space_search(board, player)
-    for threat in threats:
-        row, col = threat
-        if is_valid_move(board, row, col):
-            if has_won(result(board, (row, col), player), player):
-                player_score += 100  # Valor alto para una amenaza que podría llevar a la victoria
+    # # Evalúa la presencia de amenazas que podrían convertirse en victorias en el próximo turno
+    # threats = threat_space_search(board, player)
+    # for threat in threats:
+    #     row, col = threat
+    #     if is_valid_move(board, row, col):
+    #         if has_won(result(board, (row, col), player), player):
+    #             player_score += 100  # Valor alto para una amenaza que podría llevar a la victoria
 
-    # Evalúa la presencia de amenazas del oponente
-    opponent_threats = threat_space_search(board, opponent)
-    for threat in opponent_threats:
-        row, col = threat
-        if is_valid_move(board, row, col):
-            if has_won(result(board, (row, col), opponent), opponent):
-                opponent_score += 100  # Valor alto para una amenaza del oponente
+    # # Evalúa la presencia de amenazas del oponente
+    # opponent_threats = threat_space_search(board, opponent)
+    # for threat in opponent_threats:
+    #     row, col = threat
+    #     if is_valid_move(board, row, col):
+    #         if has_won(result(board, (row, col), opponent), opponent):
+    #             opponent_score += 100  # Valor alto para una amenaza del oponente
 
-    return player_score - opponent_score
+    return player_score # - opponent_score
 
 def evaluate_positions(board,player):
     position_values = [
@@ -179,32 +179,54 @@ def is_border(position: tuple):
         return True
     return False
 
-def calcule_e_dir(board, i, j, epsilon, player, w, next_pos, propia, enem, vacio, e_dir, val, final_val):
+def calcule_e_dir(board, i, j, epsilon, player, w, next_pos, propia, enem, vacio, e_dir, val, final_val, busy_places, total_busy_places, my_places, my_busy_places):
     if board[i][j] == '-':
         e_dir *= epsilon
         val -= 0.5
+        my_places = True
     elif board[i][j] == player:
         e_dir *= (1 * w[next_pos-1])
         val = 0
+        busy_places = True
     else:
+        my_places = True
         if val > 0.:
             final_val += val
         # e_dir *= (enem * w[next_pos-1])
-    return e_dir, final_val, val
+
+    if not busy_places:
+        total_busy_places += 1
+
+    if not my_places:
+        my_busy_places += 1
+
+    return e_dir, final_val, val, busy_places, total_busy_places, my_places, my_busy_places
+
 
 def evaluate_star(board, position, player):
     # w = [2.30, 2.143, 2, 1.866, 1.741]
-    epsilon = 2 # Contante
+    epsilon = 3 # Contante
     w = [1, 2, 3, 4, 5] # 2**10 == w_2**10
+    w.reverse()
     propia = 1.1
     enem = 1
-    vacio = 1 
+    vacio = 1
+
+    busy_places = False 
+    total_busy_places = 0
+
+    my_places = False
+    my_busy_places = 0
     e = 0
     e_dir = 1
 
     for dir in range(4):                    # Cuatro direcciones (0 = Horizontal, 1 = Diagonal Creciente,
         final_val = 0
+        total_busy_places = 0
+        my_busy_places = 0
         for l in range(2):                  # Dos lados, Ejemplo: (izquierdo, derecho) o (arriba, abajo)
+            busy_places = False
+            my_places = False
             val = 1  
             for next_pos in range(1,6):       # Por cada punto del lado
                 if l == 0:                  # a
@@ -243,9 +265,12 @@ def evaluate_star(board, position, player):
                         j = position[1] + next_pos
                 if is_border((i, j)):
                     break
-                e_dir, final_val, val = calcule_e_dir(board, i, j, epsilon, player, w, next_pos, propia, enem, vacio, e_dir, val, final_val)
+                e_dir, final_val, val, busy_places, total_busy_places, my_places, my_busy_places = calcule_e_dir(board, i, j, epsilon, player, w, next_pos, propia, enem, vacio, e_dir, val, final_val, busy_places, total_busy_places, my_places, my_busy_places)
             e += e_dir
-        e = float('inf') if final_val > 3. else e
+        e = 10.**10 if ((final_val > 3) and (total_busy_places >= 5)) else e
+        if my_busy_places >= 5:
+            print("DIOOOOOOOOOO")
+        e = float('inf') if my_busy_places >= 5 else e
     # print(f"Evaluation {e:.2f} y position {position}")        
     return e
 
@@ -417,7 +442,7 @@ def evaluate_threat_space(board, player):
     return len(threats)  # Puedes ajustar la puntuación según la cantidad de amenazas
 
 # Función para realizar la búsqueda en ventanas
-def window_search(board, player, depth, alpha, beta, action, count = 2, maximizing_player = True):
+def window_search(board, player, depth, alpha, beta, action, all_actions: set,  count = 2, maximizing_player = True):
     if depth == 0 or has_won(board, PLAYER_X) or has_won(board, PLAYER_O):
         return evaluate_advanced(board, action, player)
 
@@ -434,7 +459,8 @@ def window_search(board, player, depth, alpha, beta, action, count = 2, maximizi
         value = float('-inf')
         for move in valid_moves:
             # Este player habrá que cambiarlo
-            value = max(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, count - 1, maximizing_player))
+            new_actions = all_actions.union({move})
+            value = max(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, new_actions, count - 1, maximizing_player))
             alpha = max(alpha, value)
             if alpha >= beta:
                 break
@@ -443,7 +469,8 @@ def window_search(board, player, depth, alpha, beta, action, count = 2, maximizi
         value = float('inf')
         for move in valid_moves:
             # Este player habrá que cambiarlo
-            value = min(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, count - 1, maximizing_player))
+            new_actions = all_actions.union({move})
+            value = min(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, new_actions, count - 1, maximizing_player))
             beta = min(beta, value)
             if alpha >= beta:
                 break
@@ -463,14 +490,15 @@ def reduce_board(board, row, col, reduced_size, player, last_position:tuple):
 # Función para elegir el mejor movimiento con búsqueda de ventana
 def choose_best_move(board, player, depth, count):
     best_move = None
-    best_value = -math.inf
+    best_value = float('-inf')
     
     # valid_moves = [(row, col) for row in range(ROWS) for col in range(COLUMNS) if is_valid_move(board, row, col)]
     valid_moves = actions(board, all_positions, RANGE, player)
     for move in valid_moves:
         # Implementa la búsqueda en ventanas
         # if player == PLAYER_X:
-        value = window_search(result(board, move, player), player, depth - 1, -math.inf, math.inf, move, count)
+        new_actions = all_positions.union({move})
+        value = window_search(result(board, move, player), player, depth - 1, float('-inf'), float('inf'), move, new_actions, count)
         # else:
             # value = window_search(board, PLAYER_O if player == PLAYER_X else PLAYER_O, depth - 1, -math.inf, math.inf, True)
 
@@ -515,6 +543,7 @@ def play_connect6():
                 row, col = choose_best_move(board, PLAYER_X, depth, count)
                 count -= 1
                 all_positions.add((row, col))
+                print('BEST MOVE', row, col)
                 make_move(board, PLAYER_X, row, col)
 
         if has_won(board, player):
