@@ -114,7 +114,12 @@ def evaluate_advanced(board, position, player):
     # print("Opponent score: ", opponent_score)
     # Implementa la búsqueda de patrones
     # player_score += evaluate_patterns(board, player)
-    player_score += evaluate_star(board, position, player)
+    if has_won(board, PLAYER_X):
+        return float('inf')
+    elif has_won(board, PLAYER_O):
+        return float('-inf')
+    else:
+        player_score += evaluate_star(board, position, player)
     # Implementa la puntuación de posiciones
     # player_score += evaluate_positions(board, player)
     # opponent_score += evaluate_positions(board, opponent) 
@@ -267,11 +272,16 @@ def evaluate_star(board, position, player):
                     break
                 e_dir, final_val, val, busy_places, total_busy_places, my_places, my_busy_places = calcule_e_dir(board, i, j, epsilon, player, w, next_pos, propia, enem, vacio, e_dir, val, final_val, busy_places, total_busy_places, my_places, my_busy_places)
             e += e_dir
-        e = 10.**10 if ((final_val > 3) and (total_busy_places >= 5)) else e
-        if my_busy_places >= 5:
-            print("DIOOOOOOOOOO")
-        e = float('inf') if my_busy_places >= 5 else e
-    # print(f"Evaluation {e:.2f} y position {position}")        
+
+        # if final_val >= 3:
+            # print("final_val: ", final_val)
+        #  and total_busy_places >= 5
+        e = 10.**20 if ((final_val >= 3) and total_busy_places >= 5) else e
+        if my_busy_places >= 4:
+            print(f"INTENTO GANAR: {(position[0], position[1])}")
+            print_board(board)
+        e = float('inf') if my_busy_places >= 4 else e
+    # e = e if player == PLAYER_X else -e
     return e
 
 def evaluate_patterns(board,player):
@@ -440,6 +450,46 @@ def evaluate_threat_space(board, player):
     threats = threat_space_search(board, player)
 
     return len(threats)  # Puedes ajustar la puntuación según la cantidad de amenazas
+
+
+
+
+def window_search(board, player, depth, alpha, beta, action, count = 2, maximizing_player = True):
+    if depth == 0 or has_won(board, PLAYER_X) or has_won(board, PLAYER_O):
+        return evaluate_advanced(board, action, player)
+
+    if count <= 0:
+        count = 2
+        maximizing_player = False if maximizing_player else True
+        player = PLAYER_X if player == PLAYER_O else PLAYER_O
+
+    # Sustituir por la función de actions de comun.py
+    # valid_moves = [(row, col) for row in range(ROWS) for col in range(COLUMNS) if is_valid_move(board, row, col)]
+    valid_moves = actions(board, {action}, RANGE, player)
+
+    if maximizing_player:
+        value = float('-inf')
+        for move in valid_moves:
+            # Este player habrá que cambiarlo
+            value = max(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, count - 1, maximizing_player))
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return value
+    else:
+        value = float('inf')
+        for move in valid_moves:
+            # Este player habrá que cambiarlo
+            value = min(value, window_search(result(board, move, player), player, depth - 1, alpha, beta, move, count - 1, maximizing_player))
+            beta = min(beta, value)
+            if alpha >= beta:
+                break
+        return value
+
+
+
+
+
 
 # Función para realizar la búsqueda en ventanas
 def window_search(board, player, depth, alpha, beta, action, all_actions: set,  count = 2, maximizing_player = True):
