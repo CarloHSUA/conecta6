@@ -18,7 +18,7 @@ O_positions = set()
 # Se puede elegir el jugador con el modulo de una variable, si es par uno y si es impar el otro jugador
 turn = 0
 limit = 8
-depth = 2
+depth = 1
 
 def update_board(board, action):
     

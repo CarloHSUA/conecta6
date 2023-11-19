@@ -32,7 +32,7 @@ def is_win_by_premove(board, preMove):
             movStone = board[n][m]
             
             if (movStone == Defines.BORDER or movStone == Defines.NOSTONE):
-                return False;
+                return False
                 
             while board[x][y] == movStone:
                 x += direction[0]

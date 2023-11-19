@@ -19,10 +19,35 @@ class SearchEngine():
         if (is_win_by_premove(self.m_board, preMove)):
             if (ourColor == self.m_chess_type):
                 #Opponent wins.
-                return 0;
+                return -1
             else:
                 #Self wins.
-                return Defines.MININT + 1;
+                return 1
+        if depth == 0:
+            # Evaluar la posición actual si alcanzamos la profundidad máxima
+            return evaluate_position(self.m_board, ourColor)
+        possible_moves = generate_moves(self.m_board, ourColor)
+        
+        if ourColor == self.m_chess_type:  # Nuestro turno (Maximizar)
+            value = float('-inf')
+            for move in possible_moves:
+                make_move(self.m_board, move, ourColor)
+                value = max(value, self.alpha_beta_search(depth - 1, alpha, beta, opponent_color(ourColor), move))
+                unmake_move(self.m_board, move, ourColor)
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    break  # Podemos podar el árbol
+            return value
+        else:  # Turno del oponente (Minimizar)
+            value = float('inf')
+            for move in possible_moves:
+                make_move(self.m_board, move, ourColor)
+                value = min(value, self.alpha_beta_search(depth - 1, alpha, beta, opponent_color(ourColor), move))
+                unmake_move(self.m_board, move, ourColor)
+                beta = min(beta, value)
+                if alpha >= beta:
+                    break  # Podemos podar el árbol
+            return value
         
         alpha = 0
         if(self.check_first_move()):
