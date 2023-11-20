@@ -2,7 +2,7 @@ from window_search import *
 import random
 from rich import print
 
-NUM_PLAYERS = 32
+NUM_PLAYERS = 16
 
 # Creación inicial de pesos para la población
 population_size = 20
