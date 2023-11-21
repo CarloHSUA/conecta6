@@ -662,7 +662,10 @@ def window_search(board, player, depth, alpha, beta, action, all_actions: set, w
     # Sustituir por la función de actions de comun.py
     # valid_moves = [(row, col) for row in range(ROWS) for col in range(COLUMNS) if is_valid_move(board, row, col)]
     # valid_moves = actions(board, {action}, RANGE, player)
+
+    # valid_moves = actions(board, all_positions.union(all_actions), RANGE, player)
     valid_moves = actions(board, all_actions, RANGE, player)
+    valid_moves_part_1, valid_moves_part_2 = tuples_divider(valid_moves)
     opponent = PLAYER_X if player == PLAYER_O else PLAYER_O
 
     if(len(valid_moves) == 0):
@@ -671,10 +674,11 @@ def window_search(board, player, depth, alpha, beta, action, all_actions: set, w
     
     if maximizing_player:
         value = float('-inf')
-        for move in valid_moves:
-            valid_moves_2 = actions(result(board, move, player), all_actions, RANGE, player)
+        for move in valid_moves - valid_moves_part_1:
+            # valid_moves_2 = actions(result(board, move, player), all_positions.union(all_actions).union({move}), RANGE, player)
+            valid_moves_2 = actions(result(board, move, player), all_actions.union({move}), RANGE, player)
             # new_actions = all_actions.union({move})
-            for move_2 in valid_moves_2:
+            for move_2 in valid_moves_2 - valid_moves_part_2:
                 # Este player habrá que cambiarlo
                 new_actions = all_actions.union({move, move_2})
                 
@@ -684,14 +688,14 @@ def window_search(board, player, depth, alpha, beta, action, all_actions: set, w
                 if alpha >= beta:
                     break
             # TODO
-        # transposition_table[board_hash] = value
-        return value
+            # transposition_table[board_hash] = value
+            return value
     else:
         value = float('inf')
-        for move in valid_moves:
-            valid_moves_2 = actions(result(board, move, player), all_actions, RANGE, player)
+        for move in valid_moves - valid_moves_part_1:
+            valid_moves_2 = actions(result(board, move, player), all_actions.union({move}), RANGE, player)
             # new_actions = all_actions.union({move})
-            for move_2 in valid_moves_2:
+            for move_2 in valid_moves_2 - valid_moves_part_2:
                 # Este player habrá que cambiarlo
                 new_actions = all_actions.union({move, move_2})
                 value = min(value, window_search(result(result(board, move, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, w_player, count - 1, maximizing_player=True))
@@ -699,8 +703,8 @@ def window_search(board, player, depth, alpha, beta, action, all_actions: set, w
                 beta = min(beta, value)
                 if alpha >= beta:
                     break
-        # transposition_table[board_hash] = value
-        return value
+            # transposition_table[board_hash] = value
+            return value
 
 def tuples_divider(conjunto_tuplas):
     # Calcular la mitad del conjunto
@@ -722,6 +726,7 @@ def choose_best_move(board, player, depth, count, w_player):
     # print(last_postion)
     valid_moves = actions(board, all_positions, RANGE, player)
     valid_moves_part_1, valid_moves_part_2 = tuples_divider(valid_moves)
+
     for move in valid_moves - valid_moves_part_1:
         # valid_moves_2 = actions(result(board, move, player), {move}, RANGE, player)
         valid_moves_2 = actions(result(board, move, player), all_positions.union({move}), RANGE, player)
