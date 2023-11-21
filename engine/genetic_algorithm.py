@@ -1,13 +1,31 @@
-from window_search import *
+# from window_search import *
 import random
 from rich import print
+from game import Game
+import concurrent.futures
 
-NUM_PLAYERS = 16
+NUM_PLAYERS = 32
 
 # Creación inicial de pesos para la población
 population_size = 20
-initial_population_X = [3, 5, 4, 3, 2, 1, 3, 5, 4, 10**20, 10**25, 0.5] # [random.uniform(-1, 1) for _ in range(11)]  
-initial_population_O = [3, 5, 4, 3, 2, 1, 3, 5, 4, 10**20, 10**25, 0.5] # [random.uniform(-1, 1) for _ in range(11)]  
+w = [
+        5, 4, 3, 2, 1,     # w
+        3,                 # final_val_weight
+        4,                 # enemy_busy_places_weight
+        0.5               # val_weight
+        ]
+
+g = Game(depth = 1,
+             weights = w,
+             size = (21,21),
+             have_border=True,
+             border = '$',
+             empty = '-',
+             player_black = 'X',
+             player_white = 'O')
+
+initial_population_X = w # [random.uniform(-1, 1) for _ in range(11)]  
+initial_population_O = w # [random.uniform(-1, 1) for _ in range(11)]  
 
 
 # Función para generar una variante de lista de pesos a partir de una inicial
@@ -25,7 +43,7 @@ def evaluate_weights(w_player_X_list, w_player_O_list):
     # Devuelve una lista de ganadores de cada enfrentamiento
     winners = []
     for weights_X, weights_O in zip(w_player_X_list, w_player_O_list):
-        winner = play_connect6(weights_X, weights_O)
+        winner = g.play_connect6(weights_X, weights_O)
         if winner == 'X':
             winners.append(weights_X)
         elif winner == 'O':
@@ -33,15 +51,36 @@ def evaluate_weights(w_player_X_list, w_player_O_list):
     #winners = [(play_connect6(weights_X, weights_O)) for weights_X, weights_O in zip(w_player_X_list, w_player_O_list)]
     return winners
 
+def evaluate_weights_parallel(w_player_X_list, w_player_O_list):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Lógica para enfrentar los motores de IA con sus respectivas listas de pesos
+        # Devuelve una lista de ganadores de cada enfrentamiento
+        future_results = {
+            executor.submit(g.play_connect6, weights_X, weights_O): (weights_X, weights_O)
+            for weights_X, weights_O in zip(w_player_X_list, w_player_O_list)
+        }
+        winners = []
+        for future in concurrent.futures.as_completed(future_results):
+            weights_X, weights_O = future_results[future]
+            winner = future.result()
+            if winner == 'X':
+                winners.append(weights_X)
+            elif winner == 'O':
+                winners.append(weights_O)
+    return winners
+
+
 # Realizar el torneo
-tournament_winners = evaluate_weights(variant_weights_X_list, variant_weights_O_list)
+# tournament_winners = evaluate_weights(variant_weights_X_list, variant_weights_O_list)
+tournament_winners = evaluate_weights_parallel(variant_weights_X_list, variant_weights_O_list)
+
 count = 1
 while len(tournament_winners) > 1:
     print(f'RONDA {count}')
     count += 1
     mitad_1 = tournament_winners[:len(tournament_winners)//2]
     mitad_2 = tournament_winners[len(tournament_winners)//2:]
-    tournament_winners = evaluate_weights(mitad_1, mitad_2)
+    tournament_winners = evaluate_weights_parallel(mitad_1, mitad_2)
 
 print("BEST WEIGHT -> ", tournament_winners)
 

@@ -1,8 +1,10 @@
 from defines import *
 from tools import *
+from game import Game
 import sys
 from search_engine import SearchEngine
 import time
+from rich import print
 
 class GameEngine:
     def __init__(self, name=Defines.ENGINE_NAME):
@@ -16,6 +18,23 @@ class GameEngine:
         self.init_game()
         self.m_search_engine = SearchEngine()
         self.m_best_move = StoneMove()
+        self.game = Game(depth = 1,
+                    weights = [
+                            # 3,
+                               5, 4, 3, 2, 1, 
+                               3,             
+                               4,
+                               0.5,             
+                            #    4,             
+                            #    10**20,        
+                            #    10**25
+                               ],
+                    size = (21,21),
+                    have_border=True,
+                    border = 3,
+                    empty = 0,
+                    player_black = 1,
+                    player_white = 2)
 
     def init_game(self):
         init_board(self.m_board)
@@ -43,7 +62,7 @@ class GameEngine:
         self.on_help()
         while True:
             msg = input().strip()
-            log_to_file(msg)
+            # log_to_file(msg)
             if msg == "name":
                 print(f"name {self.m_engine_name}")
             elif msg == "exit" or msg == "quit":
@@ -67,11 +86,16 @@ class GameEngine:
                 ### OUR CODE START HERE ###
                 self.m_chess_type = self.m_chess_type ^ 3
                 if self.search_a_move(self.m_chess_type, self.m_best_move):
-                    make_move(self.m_board, self.m_best_move, self.m_chess_type)
+                    # make_move(self.m_board, self.m_best_move, self.m_chess_type)
                     msg = f"move {move2msg(self.m_best_move)}"
                     print(msg)
                     flush_output()
                 ### OUR CODE END HERE ###
+                
+
+
+
+                #########################
                 
             elif msg.startswith("new"):
                 self.init_game()
@@ -87,11 +111,10 @@ class GameEngine:
             elif msg.startswith("move"):
                 self.m_best_move = msg2move(msg[5:])
                 make_move(self.m_board, self.m_best_move, self.m_chess_type ^ 3)
-                if is_win_by_premove(self.m_board, self.m_best_move):
-                    print("We lost!")
+                if self.game.has_won(self.m_board, self.m_chess_type ^ 3):
+                    print(f"PLAYER {self.m_chess_type ^ 3} ha ganado!!!")
                 if self.search_a_move(self.m_chess_type, self.m_best_move):
                     msg = f"move {move2msg(self.m_best_move)}"
-                    make_move(self.m_board, self.m_best_move, self.m_chess_type)
                     print(msg)
                     flush_output()
             elif msg.startswith("depth"):
@@ -103,20 +126,30 @@ class GameEngine:
                 self.on_help()
         return 0
 
-    def search_a_move(self, ourColor, bestMove):
+    def search_a_move(self, player, bestMove):
         score = 0
         start = 0
         end = 0
-
         start = time.perf_counter()
         self.m_search_engine.before_search(self.m_board, self.m_chess_type, self.m_alphabeta_depth)
-        score = self.m_search_engine.alpha_beta_search(self.m_alphabeta_depth, Defines.MININT, Defines.MAXINT, ourColor, bestMove, bestMove)
-        end = time.perf_counter()
+        
+        # TODO #################################
+        score, best_move = self.m_search_engine.alfa_beta(self.game, self.m_board, player, self.m_alphabeta_depth)
+        self.m_best_move = best_move
+        make_move(self.m_board, best_move, player)
+        print_board(self.m_board)
+        # if self.game.has_won(self.m_board, player):
+        #     print(f"PLAYER {player} ha ganado!!!")
+        ########################################
 
+        end = time.perf_counter()
+        
         print(f"AB Time:\t{end - start:.3f}")
         print(f"Node:\t{self.m_search_engine.m_total_nodes}\n")
         print(f"Score:\t{score:.3f}")
         return True
+    
+     
 
 def flush_output():
     sys.stdout.flush()
