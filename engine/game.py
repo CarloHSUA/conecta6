@@ -27,6 +27,9 @@ class Game():
         self.all_positions = set()
         self.last_postion = set() 
 
+        self.hash_table = [[random.getrandbits(64) for _ in range(4)] for _ in range(size[0] * size[1])]
+        self.transposition_table = {}
+
     def set_board(self, board):
         self.board = board
 
@@ -126,17 +129,16 @@ class Game():
         return False
 
     # Función de heurística avanzada
-    def evaluate_advanced(self,board, position, player, all_actions, w_player):
+    def evaluate_advanced(self, board, player, w_player):
         opponent = self.player_black if player == self.player_white else self.player_white
         
         player_score = 0
         opponent_score = 0
         a = 0
-        val_tot = 0
 
-        if self.has_won(board, player):
+        if self.has_won(board, self.player_black):
             return float('inf')
-        elif self.has_won(board, opponent):
+        elif self.has_won(board, self.player_white):
             return float('-inf')
         else:
             player_positions = {(i, j) for i, row in enumerate(board) for j, val in enumerate(row) if val == player}# and (i,j) in all_actions}
@@ -144,13 +146,13 @@ class Game():
             # all_board = {(i, j) for i, row in enumerate(board) for j, val in enumerate(row) if val == player or val == opponent}
     
             for pos in player_positions:
-                aux, amenazas, val = self.evaluate_star(board, pos, player, w_player)
-                val_tot += val
+                aux, amenazas = self.evaluate_star(board, pos, player, w_player)
                 player_score += aux
                 a += amenazas
            
-            player_score = player_score * (10**(12 * a))
-        return player_score - opponent_score
+            player_score = player_score * (10**(2 * a)) # 12
+            player_score = player_score / 1000          # 10 ** 17
+        return player_score if player == self.player_black else - player_score # - opponent_score
 
 
     def is_border(self, position: tuple):
@@ -224,12 +226,12 @@ class Game():
             final_val = 0
             enemy_busy_places = 0
             my_busy_places = 0
-            free_spaces = 0
             for l in range(2):                  # Dos lados, Ejemplo: (izquierdo, derecho) o (arriba, abajo)
                 busy_places = False
                 my_places = False
                 val = 1  
                 enemy = 0
+                free_spaces = 0
                 for next_pos in range(1,6):       # Por cada punto del lado
                     if l == 0:                  # a
                         
@@ -268,10 +270,22 @@ class Game():
                     if self.is_border((i, j)):
                         break
                     e_dir, final_val, val, busy_places, enemy_busy_places, my_places, my_busy_places, free_spaces, enemy = self.calcule_e_dir(board, i, j, epsilon, player, w, next_pos, e_dir, val, val_weight, final_val, busy_places, enemy_busy_places, my_places, my_busy_places, free_spaces, enemy)
+                
+                if enemy == 4 and free_spaces == 0:
+                    # Hay 4 enemigos juntos y dos huecos vacios
+                    amenaza += 1
+                if enemy == 5 and free_spaces == 0:
+                    # Hay 4 enemigos juntos y dos huecos vacios
+                    amenaza += 2
+                # if enemy == 5 and free_spaces == 0:
+                #     # Hay 4 enemigos juntos y dos huecos vacios
+                #     e = e ** 4
+
                 e += e_dir 
 
-            if final_val >= 3 and enemy_busy_places >= 5 and free_spaces > 0:
+            if final_val >= 3 and enemy_busy_places >= 5: # and free_spaces > 0:
                 amenaza += 1
+                # print(enemy)
             
             e = e * 1000 if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight) else e
             e = e * final_val if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight + 1) else e
@@ -281,7 +295,7 @@ class Game():
                 print_board(board)
             e = e * e_win_weight if my_busy_places >= my_busy_places_weight else e
             '''
-        return e, amenaza, enemy_busy_places
+        return e, amenaza
 
     # Función para evaluar las amenazas utilizando sliding window
     def evaluate_sliding_window(self, board, player):
@@ -322,27 +336,113 @@ class Game():
 
         return opponent_score
 
+    # Función para generar el hash Zobrist del tablero
+    def zobrist_hash(self, board):
+        hash_val = 0
+        for i in range(self.ROWS):
+            for j in range(self.COLUMNS):
+                if board[i][j] == 'X':
+                    hash_val ^= self.hash_table[i * self.ROWS + j][0]
+                elif board[i][j] == 'O':
+                    hash_val ^= self.hash_table[i * self.ROWS + j][1]
+                elif board[i][j] == '$':
+                    hash_val ^= self.hash_table[i * self.ROWS + j][2]
+                else:
+                    hash_val ^= self.hash_table[i * self.ROWS + j][3]
+        return hash_val
+    
+    def get_order_moves(self, board, all_actions, player, opponent, num_ordered_moves = None):
+        valid_moves = self.actions(board, all_actions, self.RANGE, player)
+        moves_with_score = {}
+        #Bucle en movimientos para guardar en un set en tuplas de 4
+        for move in valid_moves:
+            valid_moves_2 = self.actions(self.result(board, move, player), all_actions.union({move}), self.RANGE, player)
+            for move_2 in valid_moves_2:
+                score = 0
+                # # TODO: Hay que revisar si a este board se le han aplicado los anteriores movimientos
+                # # score = self.evaluate_advanced(board, self.player_black, w_player)
+                # board_hash_2 = self.zobrist_hash(self.result(self.result(board, move, opponent), move_2, opponent))
+                # if board_hash_2 in self.transposition_table:
+                #     score = self.transposition_table[board_hash_2]
+                #     # print("Tabla HASH")
+                # else:
+                score = self.evaluate_advanced(self.result(self.result(board, move, player), move_2, player), self.player_black, self.weights)
+                # self.transposition_table[board_hash_2] = score
+                    # print("NO - Tabla HASH")
+
+                moves_with_score[score] = (move[0], move[1], move_2[0], move_2[1])
+
+        # Obtenemos lista de tuplas de mejor a peor
+        '''
+        ordered_moves = dict(sorted(moves_with_score.items(), key=lambda x: x[0], reverse=True))
+        ordered_moves = [values for _, values in moves_with_score.items()]
+        '''
+        ordered_moves = [moves_with_score[score] for score in sorted(moves_with_score, reverse=True)]
+        # ordered_moves = ordered_moves[:1]
+        if num_ordered_moves == None:
+            return ordered_moves[:]
+        else:
+            return ordered_moves[:num_ordered_moves]
+
 
     # Función para realizar la búsqueda en ventanas
-    def window_search(self, board, player, depth, alpha, beta, action, all_actions: set, w_player, count = 2, maximizing_player = True):
+    def window_search(self, board, player, depth, alpha, beta, action, all_actions, predicted_actions, w_player, maximizing_player = True):
+
+        # board_hash = self.zobrist_hash(board)
         if depth == 0 or self.has_won(board, self.player_black) or self.has_won(board, self.player_white):
-            return self.evaluate_advanced(board, action, player, all_actions, w_player)
+            # if board_hash in self.transposition_table:
+            #     return self.transposition_table[board_hash]
+            value = self.evaluate_advanced(board, self.player_black, w_player)
+            # self.transposition_table[board_hash] = value
+            return value
     
         valid_moves = self.actions(board, all_actions, self.RANGE, player)
-        valid_moves_part_1, valid_moves_part_2 = self.tuples_divider(valid_moves)
         opponent = self.player_black if player == self.player_white else self.player_white
+        # valid_moves_part_1, valid_moves_part_2 = self.tuples_divider(valid_moves)
 
         if(len(valid_moves) == 0):
             return 0
         
+        # ordered_moves = self.get_order_moves(board, all_actions, player, opponent, 10)
+        ordered_moves = self.get_order_moves(board, predicted_actions, player, opponent, 20)
+
         if maximizing_player:
             value = float('-inf')
-            for move in valid_moves - valid_moves_part_1:
+            for move in ordered_moves:
+                move_1 = (move[0],move[1])
+                move_2 = (move[2],move[3])
+                new_actions = all_actions.union({move_1, move_2})
+                # new_predicted_actions = predicted_actions.union({move_1, move_2})
+                new_predicted_actions = {move_1, move_2}
+                value = max(value, self.window_search(self.result(self.result(board, move_1, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, new_predicted_actions, w_player, maximizing_player=False))
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    print('PODO', depth)
+                    break
+            return value    
+        else:
+            value = float('inf')
+            for move in ordered_moves:
+                move_1 = (move[0],move[1])
+                move_2 = (move[2],move[3])
+                new_actions = all_actions.union({move_1, move_2})
+                # new_predicted_actions = predicted_actions.union({move_1, move_2})
+                new_predicted_actions = predicted_actions
+                value = min(value, self.window_search(self.result(self.result(board, move_1, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, new_predicted_actions, w_player, maximizing_player=True))
+                beta = min(beta, value)
+                if alpha >= beta:
+                    print('PODO', depth)
+                    break
+            return value          
+        '''
+        if maximizing_player:
+            value = float('-inf')
+            for move in valid_moves:# - valid_moves_part_1:
                 valid_moves_2 = self.actions(self.result(board, move, player), all_actions.union({move}), self.RANGE, player)
-                for move_2 in valid_moves_2 - valid_moves_part_2:
+                for move_2 in valid_moves_2:#  - valid_moves_part_2:
                     new_actions = all_actions.union({move, move_2})
                     
-                    value = max(value, self.window_search(self.result(self.result(board, move, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, w_player, count - 1, maximizing_player=False))
+                    value = max(value, self.window_search(self.result(self.result(board, move, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, w_player, maximizing_player=False))
                     new_actions = set()
                     alpha = max(alpha, value)
                     if alpha >= beta:
@@ -354,12 +454,13 @@ class Game():
                 valid_moves_2 = self.actions(self.result(board, move, player), all_actions.union({move}), self.RANGE, player)
                 for move_2 in valid_moves_2 - valid_moves_part_2:
                     new_actions = all_actions.union({move, move_2})
-                    value = min(value, self.window_search(self.result(self.result(board, move, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, w_player, count - 1, maximizing_player=True))
+                    value = min(value, self.window_search(self.result(self.result(board, move, opponent), move_2, opponent), opponent, depth - 1, alpha, beta, move_2, new_actions, w_player, maximizing_player=True))
                     new_actions = set()
                     beta = min(beta, value)
                     if alpha >= beta:
                         break
                 return value
+        '''   
 
     def tuples_divider(self, conjunto_tuplas):
         # Calcular la mitad del conjunto
@@ -371,37 +472,78 @@ class Game():
         return parte_1, parte_2
 
     # Función para elegir el mejor movimiento con búsqueda de ventana
-    def choose_best_move(self, board, player, depth, count, w_player):
+    def choose_best_move(self, board, player, depth, w_player):
         best_move = (None, None)
         best_move_2 = (None, None)
         best_value = float('-inf')
         new_actions = set()
 
-        # valid_moves = [(row, col) for row in range(self.ROWS) for col in range(self.COLUMNS) if is_valid_move(board, row, col)]
-        # print(self.last_postion)
         if len(self.all_positions) > 0:
             all_positions = {(i, j) for i, row in enumerate(board) for j, val in enumerate(row) if val != self.border and val != self.empty}
         else:
             all_positions = self.all_positions
 
-        # print(all_positions)
         valid_moves = self.actions(board, all_positions, self.RANGE, player)
-        valid_moves_part_1, valid_moves_part_2 = self.tuples_divider(valid_moves)
+        # valid_moves_part_1, valid_moves_part_2 = self.tuples_divider(valid_moves)
 
         for move in valid_moves:# - valid_moves_part_1:
-            # valid_moves_2 = actions(result(board, move, player), {move}, self.RANGE, player)
             valid_moves_2 = self.actions(self.result(board, move, player), all_positions.union({move}), self.RANGE, player)
-            # new_actions = new_actions.union({move})
             for move_2 in valid_moves_2:# - valid_moves_part_2:
                 
                 new_actions = new_actions.union({move, move_2})
-                value = self.window_search(self.result(self.result(board, move, player), move_2, player), player, depth - 1, float('-inf'), float('inf'), move_2, new_actions, w_player, count-1, maximizing_player=False)
+                value = self.window_search(self.result(self.result(board, move, player), move_2, player), player, depth - 1, float('-inf'), float('inf'), move_2, new_actions, w_player, maximizing_player=False)
                 new_actions = set()
+                
                 if value > best_value:
                     best_value = value
                     best_move = move
                     best_move_2 = move_2
 
+        return best_move, best_move_2
+
+
+    # Función para elegir el mejor movimiento con búsqueda de ventana
+    def choose_best_move_2(self, board, player, depth, w_player):
+        best_move = (None, None)
+        best_move_2 = (None, None)
+        best_value = float('-inf')
+        value = float('-inf')
+        alpha = float('-inf')
+        beta = float('inf')
+        predicted_actions = set()
+
+        if len(self.all_positions) > 0:
+            all_positions = {(i, j) for i, row in enumerate(board) for j, val in enumerate(row) if val != self.border and val != self.empty}
+        else:
+            all_positions = self.all_positions
+
+        opponent = self.player_black if player == self.player_white else self.player_white
+        ordered_moves = self.get_order_moves(board, all_positions, player, opponent, 20)
+
+        print('PLAYER', player, 'Oponent', opponent, ordered_moves[:10])
+        for move in ordered_moves:
+            move_1 = (move[0],move[1])
+            move_2 = (move[2],move[3])
+            
+            new_actions = all_positions.union({move_1, move_2})
+            predicted_actions = {move_1, move_2}
+            # value = self.window_search(self.result(self.result(board, move_1, player), move_2, player), player, depth - 1, alfa, beta, move_2, new_actions, w_player, maximizing_player=False)
+            value = max(value, self.window_search(self.result(self.result(board, move_1, player), move_2, player), player, depth - 1, alpha, beta, move_2, new_actions, predicted_actions, w_player, maximizing_player=False))
+            alpha = max(alpha, value)
+            # print("VALUE", value)
+
+            if value > best_value:
+                best_value = value
+                best_move = move_1
+                best_move_2 = move_2
+
+            if alpha >= beta:
+                print("PODO", depth)
+                break
+
+            
+
+        print(best_move, best_move_2)
         return best_move, best_move_2
 
     # Función principal del juego
@@ -419,7 +561,6 @@ class Game():
             if not autobot:
                 print(board)
                 self.print_board(board)
-            count = 1
             # for _ in range(2):  # Realiza dos movimientos en cada turno
             if player == self.player_white:
                 if not autobot:
@@ -443,22 +584,20 @@ class Game():
                 else:
 
                     '''MAQUINA vs MAQUINA'''
-                    # row, col = choose_best_move(board, self.player_white, depth, count, w_player)
+                    # row, col = choose_best_move(board, self.player_white, depth, w_player)
                     # make_move(board, self.player_white, row, col)
-                    jugada1, jugada2 = self.choose_best_move(board, self.player_white, self.DEPTH, count, w_player)
+                    jugada1, jugada2 = self.choose_best_move_2(board, self.player_white, self.DEPTH, w_player)
                     self.all_positions.add((jugada1[0], jugada1[1]))
                     self.all_positions.add((jugada2[0], jugada2[1]))
                     self.make_move(board, self.player_white, jugada1[0], jugada1[1])
                     self.make_move(board, self.player_white, jugada2[0], jugada2[1])
                     
             else:
-                jugada1, jugada2 =  self.choose_best_move(board, self.player_black, self.DEPTH, count, w_opponent)
+                jugada1, jugada2 =  self.choose_best_move_2(board, self.player_black, self.DEPTH, w_opponent)
                 if jugada1 == (None,None) and jugada2 == (None,None):
                     pass
                     #self.print_board(board)
                 else:
-                    count -= 1
-                    # depth -= 1
                     self.all_positions.add((jugada1[0], jugada1[1]))
                     self.all_positions.add((jugada2[0], jugada2[1]))
                     # print('BEST MOVE', row, col)
@@ -495,18 +634,18 @@ if __name__ == "__main__":
         # 10**25,            # e_win_weight
     ]
 
-    w = [
-        5.440125720349658,
-        3.801169896265987,
-        3.466591753465339,
-        1.8002378612193457,
-        0.6196233398563769,
-        2.782827933885025,
-        3.8241072409163737,
-        0.7335043259196556
-    ]
+    # w = [
+    #     5.440125720349658,
+    #     3.801169896265987,
+    #     3.466591753465339,
+    #     1.8002378612193457,
+    #     0.6196233398563769,
+    #     2.782827933885025,
+    #     3.8241072409163737,
+    #     0.7335043259196556
+    # ]
 
-    g = Game(depth = 1,
+    g = Game(depth = 3,
              weights = w,
              size = (21,21),
              have_border=True,
