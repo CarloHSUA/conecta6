@@ -287,8 +287,10 @@ class Game():
                 amenaza += 1
                 # print(enemy)
             
-            e = e * 1000 if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight) else e
-            e = e * final_val if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight + 1) else e
+            # e = e * 1000 if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight) else e
+            # e = e * final_val if ((final_val >= final_val_weight) and enemy_busy_places >= enemy_busy_places_weight + 1) else e
+            # TODO: Revisar esta función
+            e = e * final_val if ((final_val >= final_val_weight) and enemy_busy_places >= 5 + 1) else e
             '''
             if my_busy_places >= 4:
                 print(f"INTENTO GANAR: {(position[0], position[1])}")
@@ -366,7 +368,7 @@ class Game():
                 #     score = self.transposition_table[board_hash_2]
                 #     # print("Tabla HASH")
                 # else:
-                score = self.evaluate_advanced(self.result(self.result(board, move, player), move_2, player), self.player_black, self.weights)
+                score = self.evaluate_advanced(self.result(self.result(board, move, player), move_2, player), player, self.weights)
                 # self.transposition_table[board_hash_2] = score
                     # print("NO - Tabla HASH")
 
@@ -392,7 +394,7 @@ class Game():
         if depth == 0 or self.has_won(board, self.player_black) or self.has_won(board, self.player_white):
             # if board_hash in self.transposition_table:
             #     return self.transposition_table[board_hash]
-            value = self.evaluate_advanced(board, self.player_black, w_player)
+            value = self.evaluate_advanced(board, player, w_player)
             # self.transposition_table[board_hash] = value
             return value
     
@@ -419,7 +421,7 @@ class Game():
                 if alpha >= beta:
                     print('PODO', depth)
                     break
-            return value    
+            return value
         else:
             value = float('inf')
             for move in ordered_moves:
