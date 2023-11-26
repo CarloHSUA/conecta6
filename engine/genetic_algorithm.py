@@ -11,13 +11,15 @@ population_size = 20
 w = [
         5, 4, 3, 2, 1,     # w
         3,                 # final_val_weight
-        4,                 # enemy_busy_places_weight
-        0.5               # val_weight
+        5,                 # enemy_busy_places_weight (int)
+        0.5,               # val_weight
+        20                 # N_best_moves_weight (int)
         ]
 
-g = Game(depth = 1,
+g = Game(depth = 3,
              weights = w,
              size = (21,21),
+             time_limit = 15,
              have_border=True,
              border = '$',
              empty = '-',
@@ -30,7 +32,17 @@ initial_population_O = w # [random.uniform(-1, 1) for _ in range(11)]
 
 # Función para generar una variante de lista de pesos a partir de una inicial
 def generate_variant_weights(initial_weights):
-    variant_weights = [weight + random.uniform(-0.5, 0.5) for weight in initial_weights]
+    # variant_weights = [weight + random.uniform(-0.5, 0.5) for weight in initial_weights]
+    variant_weights = []
+    for idx, weight in enumerate(initial_weights):
+        if idx == 6:
+            random_num = weight + random.randint(-2, 2)
+        elif idx == 8:
+            random_num = weight + random.randint(-10, 10)
+        else:
+            random_num = weight + random.uniform(-0.5, 0.5)
+            
+        variant_weights.append(random_num)
     return variant_weights
 
 # Generar variantes de estas listas de pesos para el torneo
@@ -85,3 +97,9 @@ while len(tournament_winners) > 1:
 print("BEST WEIGHT -> ", tournament_winners)
 
 # Ahora tournament_winners contiene una lista con los ganadores de cada enfrentamiento en el torneo
+
+print('Final fight')
+print('Weights player', tournament_winners[0])
+print('Weights opponent', w)
+
+g.play_connect6(tournament_winners[0], w, verbose = True)

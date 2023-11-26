@@ -13,28 +13,25 @@ class GameEngine:
                 self.m_engine_name = name
             else:
                 print(f"Too long Engine Name: {name}, should be less than: {Defines.MSG_LENGTH}")
-        self.m_alphabeta_depth = 6
+        self.m_alphabeta_depth = 1
         self.m_board = t = [ [0]*Defines.GRID_NUM for i in range(Defines.GRID_NUM)]
         self.init_game()
         self.m_search_engine = SearchEngine()
         self.m_best_move = StoneMove()
         self.game = Game(depth = 1,
-                    weights = [
-                            # 3,
-                               5, 4, 3, 2, 1, 
-                               3,             
-                               4,
-                               0.5,             
-                            #    4,             
-                            #    10**20,        
-                            #    10**25
-                               ],
-                    size = (21,21),
-                    have_border=True,
-                    border = 3,
-                    empty = 0,
-                    player_black = 1,
-                    player_white = 2)
+                        weights =   [
+                                    5, 4, 3, 2, 1, 
+                                    3,             
+                                    5,
+                                    0.5,
+                                    20],
+                        size = (21,21),
+                        time_limit = 15,
+                        have_border=True,
+                        border = 3,
+                        empty = 0,
+                        player = 1,     # O
+                        opponent = 2)   # *
 
     def init_game(self):
         init_board(self.m_board)
@@ -77,10 +74,14 @@ class GameEngine:
                 self.m_best_move = msg2move(msg[6:])
                 make_move(self.m_board, self.m_best_move, Defines.BLACK)
                 self.m_chess_type = Defines.BLACK
+                self.game.set_player_and_opponent(new_player=Defines.BLACK,
+                                                  new_opponent=Defines.WHITE)
             elif msg.startswith("white"):
                 self.m_best_move = msg2move(msg[6:])
                 make_move(self.m_board, self.m_best_move, Defines.WHITE)
                 self.m_chess_type = Defines.WHITE
+                self.game.set_player_and_opponent(new_player=Defines.WHITE,
+                                                  new_opponent=Defines.BLACK)
             elif msg == "next":
 
                 ### OUR CODE START HERE ###
@@ -120,7 +121,12 @@ class GameEngine:
             elif msg.startswith("depth"):
                 d = int(msg[6:])
                 if 0 < d < 10:
-                    self.m_alphabeta_depth = d
+                    if d == 2:
+                        self.m_alphabeta_depth = 1
+                    elif d == 4:
+                        self.m_alphabeta_depth = 2
+                    elif d == 6 or d > 6:
+                        self.m_alphabeta_depth = 3
                 print(f"Set the search depth to {self.m_alphabeta_depth}.\n")
             elif msg == "help":
                 self.on_help()
@@ -135,6 +141,7 @@ class GameEngine:
         
         # TODO #################################
         score, best_move = self.m_search_engine.alfa_beta(self.game, self.m_board, player, self.m_alphabeta_depth)
+        print(best_move)
         self.m_best_move = best_move
         make_move(self.m_board, best_move, player)
         print_board(self.m_board)

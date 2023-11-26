@@ -22,14 +22,17 @@ class SearchEngine():
         positions = {(i, j) for i, row in enumerate(board) for j, val in enumerate(row) if val != Defines.BORDER and val != Defines.NOSTONE}
         if len(positions) == 0:
             best_move = StoneMove()
-            best_move.positions[0].x = jugada1[0]
-            best_move.positions[0].y = jugada1[1]
+            best_move.positions[0].x = best_move.positions[1].x = game.ROWS // 2
+            best_move.positions[0].y = best_move.positions[1].y = game.COLUMNS // 2
             return score, best_move
 
-        depth = 1
+        # depth = 1
+        game.set_player_and_opponent(new_player = player,
+                                     new_opponent = player ^ 3)
         print(board, player, depth, 1, game.weights)
 
-        jugada1, jugada2 =  game.choose_best_move(board, player, depth, 1, game.weights)
+        # jugada1, jugada2 =  game.choose_best_move(board, player, depth, 1, game.weights)
+        jugada1, jugada2 =  game.choose_best_move_2(board, player, depth)
 
         print(jugada1, jugada2)
 
