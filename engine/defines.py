@@ -29,7 +29,7 @@ class StoneMove:
 
 # One point and its value.
 class Chess:
-    def __init__(x,y,score):
+    def __init__(self,x,y,score):
         self.x = x
         self.y = y
         self.score = score
