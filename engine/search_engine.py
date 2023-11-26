@@ -29,10 +29,10 @@ class SearchEngine():
         # depth = 1
         game.set_player_and_opponent(new_player = player,
                                      new_opponent = player ^ 3)
-        print(board, player, depth, 1, game.weights)
+        print("PLAYER ", game.player,"OPPONENT " ,game.opponent, depth, 1, game.weights)
 
         # jugada1, jugada2 =  game.choose_best_move(board, player, depth, 1, game.weights)
-        jugada1, jugada2 =  game.choose_best_move_2(board, player, depth)
+        jugada1, jugada2, best_value = game.choose_best_move_2(board, player, depth)
 
         print(jugada1, jugada2)
 
@@ -47,47 +47,47 @@ class SearchEngine():
             best_move.positions[1].y = jugada2[1]
 
         
-        return score, best_move
+        return best_value, best_move
 
-    def alpha_beta_search(self, depth, alpha, beta, ourColor, bestMove, preMove):
+    # def alpha_beta_search(self, depth, alpha, beta, ourColor, bestMove, preMove):
         
-        opponent = get_opponent(self.m_chess_type)
-        if depth == 0 or has_won(self.m_board, self.m_chess_type) or has_won(self.m_board, opponent):
-            return evaluate_advanced(self.m_board, action, player, self.all_positions, w_player)
+    #     opponent = get_opponent(self.m_chess_type)
+    #     if depth == 0 or has_won(self.m_board, self.m_chess_type) or has_won(self.m_board, opponent):
+    #         return evaluate_advanced(self.m_board, action, player, self.all_positions, w_player)
         
-        valid_moves = actions(self.m_board, {action}, player)
-        if ourColor == self.m_chess_type:
-            value = float('-inf')
-            for move in valid_moves:
-                new_actions = all_actions.union({move})
-        else:
-            value = float('inf')
+    #     valid_moves = actions(self.m_board, {action}, player)
+    #     if ourColor == self.m_chess_type:
+    #         value = float('-inf')
+    #         for move in valid_moves:
+    #             new_actions = all_actions.union({move})
+    #     else:
+    #         value = float('inf')
         
-        alpha = 0
-        if(self.check_first_move()):
-            bestMove.positions[0].x = 10
-            bestMove.positions[0].y = 10
-            bestMove.positions[1].x = 10
-            bestMove.positions[1].y = 10
-        else:   
-            move1 = self.find_possible_move()
-            bestMove.positions[0].x = move1[0]
-            bestMove.positions[0].y = move1[1]
-            bestMove.positions[1].x = move1[0]
-            bestMove.positions[1].y = move1[1]
-            make_move(self.m_board,bestMove,ourColor)
+    #     alpha = 0
+    #     if(self.check_first_move()):
+    #         bestMove.positions[0].x = 10
+    #         bestMove.positions[0].y = 10
+    #         bestMove.positions[1].x = 10
+    #         bestMove.positions[1].y = 10
+    #     else:   
+    #         move1 = self.find_possible_move()
+    #         bestMove.positions[0].x = move1[0]
+    #         bestMove.positions[0].y = move1[1]
+    #         bestMove.positions[1].x = move1[0]
+    #         bestMove.positions[1].y = move1[1]
+    #         make_move(self.m_board,bestMove,ourColor)
             
-            '''#Check game result
-            if (is_win_by_premove(self.m_board, bestMove)):
-                #Self wins.
-                return Defines.MININT + 1;'''
+    #         '''#Check game result
+    #         if (is_win_by_premove(self.m_board, bestMove)):
+    #             #Self wins.
+    #             return Defines.MININT + 1;'''
             
-            move2 = self.find_possible_move()
-            bestMove.positions[1].x = move2[0]
-            bestMove.positions[1].y = move2[1]
-            make_move(self.m_board,bestMove,ourColor)
+    #         move2 = self.find_possible_move()
+    #         bestMove.positions[1].x = move2[0]
+    #         bestMove.positions[1].y = move2[1]
+    #         make_move(self.m_board,bestMove,ourColor)
 
-        return alpha
+    #     return alpha
         
     def check_first_move(self):
         for i in range(1,len(self.m_board)-1):

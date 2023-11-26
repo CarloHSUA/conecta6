@@ -13,12 +13,12 @@ class GameEngine:
                 self.m_engine_name = name
             else:
                 print(f"Too long Engine Name: {name}, should be less than: {Defines.MSG_LENGTH}")
-        self.m_alphabeta_depth = 1
+        self.m_alphabeta_depth = 3
         self.m_board = t = [ [0]*Defines.GRID_NUM for i in range(Defines.GRID_NUM)]
         self.init_game()
         self.m_search_engine = SearchEngine()
         self.m_best_move = StoneMove()
-        self.game = Game(depth = 1,
+        self.game = Game(depth = 3,
                         weights =   [
                                     5, 4, 3, 2, 1, 
                                     3,             
@@ -93,9 +93,6 @@ class GameEngine:
                     flush_output()
                 ### OUR CODE END HERE ###
                 
-
-
-
                 #########################
                 
             elif msg.startswith("new"):
@@ -127,6 +124,8 @@ class GameEngine:
                         self.m_alphabeta_depth = 2
                     elif d == 6 or d > 6:
                         self.m_alphabeta_depth = 3
+                    else:
+                        self.m_alphabeta_depth = d
                 print(f"Set the search depth to {self.m_alphabeta_depth}.\n")
             elif msg == "help":
                 self.on_help()
@@ -145,8 +144,6 @@ class GameEngine:
         self.m_best_move = best_move
         make_move(self.m_board, best_move, player)
         print_board(self.m_board)
-        # if self.game.has_won(self.m_board, player):
-        #     print(f"PLAYER {player} ha ganado!!!")
         ########################################
 
         end = time.perf_counter()
